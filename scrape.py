@@ -32,27 +32,33 @@ for link in urls:
     soup = BeautifulSoup(page)
     soup.prettify()
 
-    title = soup.find('h1', itemprop="name")
-    print title
-    recipename = re.sub(" ", "_", title.string)
-    #print recipename
-    #print title.string
+    if soup.find('h1', itemprop="name"):
+        title = soup.find('h1', itemprop="name")
+        print title
+        recipename = re.sub(" ", "_", title.string)
+    else:
+        continue
 
-    servings = soup.find('td', class_="servings")
-    #print servings.em.string
+    if soup.find('td', class_="servings"):
+        servings = soup.find('td', class_="servings")
+    else:
+        continue
 
-    ingredients = soup.find('ul', class_="ingredient-table")
-    #for ing in ingredients.find_all("li"):
-    #    print ing.label.string
+    if soup.find('ul', class_="ingredient-table"):
+        ingredients = soup.find('ul', class_="ingredient-table")
+    else:
+        continue
 
     #nutrition is per serve
-    nutrition = soup.find('table', class_="nutrition-table")
-    #for stat in nutrition.stripped_strings:
-    #    print stat
+    if soup.find('table', class_="nutrition-table"):
+        nutrition = soup.find('table', class_="nutrition-table")
+    else:
+        continue
 
-    directions = soup.find('div', class_="content-item tab-content current method-tab-content")
-    #for step in directions.find_all('p', class_="description"):
-    #    print step.string
+    if soup.find('div', class_="content-item tab-content current method-tab-content"):
+        directions = soup.find('div', class_="content-item tab-content current method-tab-content")
+    else:
+        continue
 
     #get retrieve image and get extension
     imageTag = soup.find('div', class_="recipe-image-wrapper")
