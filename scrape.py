@@ -6,6 +6,8 @@ import urllib2
 import sys
 from bs4 import BeautifulSoup
 import re
+from sets import Set
+import codecs
 
 source = sys.argv[1]
 
@@ -14,65 +16,81 @@ page = urllib2.urlopen(source)
 soup = BeautifulSoup(page)
 soup.prettify()
 
+block = soup.find('div', class_="content-item tab-content current")
 
-title = soup.find('h1', itemprop="name")
-recipename = re.sub(" ", "_", title.string)
-#print recipename
-#print title.string
+recipes = block.find_all('a')
 
-servings = soup.find('td', class_="servings")
-#print servings.em.string
+urls = Set()
+for recipe in recipes:
+    if 'href' in recipe.attrs and recipe['href'] not in urls:
+        urls.add(recipe['href'])
+        #print recipe['href']
 
-ingredients = soup.find('ul', class_="ingredient-table")
-#for ing in ingredients.find_all("li"):
-#    print ing.label.string
+for link in urls:
+    page = urllib2.urlopen(link)
 
-#nutrition is per serve
-nutrition = soup.find('table', class_="nutrition-table")
-#for stat in nutrition.stripped_strings:
-#    print stat
+    soup = BeautifulSoup(page)
+    soup.prettify()
 
-directions = soup.find('div', class_="content-item tab-content current method-tab-content")
-#for step in directions.find_all('p', class_="description"):
-#    print step.string
+    title = soup.find('h1', itemprop="name")
+    print title
+    recipename = re.sub(" ", "_", title.string)
+    #print recipename
+    #print title.string
 
-#get retrieve image and get extension
-imageTag = soup.find('div', class_="recipe-image-wrapper")
-image = imageTag.img['src']
-outpath = re.search(".*/.*\.([a-z]+)$", image)
-imgExtension = outpath.group(1)
-imgName = recipename + "." +imgExtension
-urlretrieve(image, imgName)
+    servings = soup.find('td', class_="servings")
+    #print servings.em.string
 
-outfile = recipename + ".xml"
-f = open(outfile, "w")
-f.write("<recipe>\n")
-f.write("<head>\n")
-f.write("\t<title>"+title.string+"</title>\n")
-f.write("\t<yield>"+servings.em.string+"</yield>\n</head>\n")
-f.write("<ingredients>\n")
-for ing in ingredients.find_all("li"):
-    f.write("\t<ing>\n\t\t<item>")
-    f.write(ing.label.string.strip()+"\t\t</item>\n\t</ing>\n")
+    ingredients = soup.find('ul', class_="ingredient-table")
+    #for ing in ingredients.find_all("li"):
+    #    print ing.label.string
 
-f.write("</ingredients>\n")
-f.write("<nutrition>\n")
-line = ""
-for stat in nutrition.stripped_strings:
-    if re.search("[0-9]", stat):
-        line = re.sub("><", ">"+stat+"<", line)
-        f.write(line)
-    else:
-        line = "\t<"+stat+"></"+stat+">\n"
-f.write("</nutrition>\n")
+    #nutrition is per serve
+    nutrition = soup.find('table', class_="nutrition-table")
+    #for stat in nutrition.stripped_strings:
+    #    print stat
 
-f.write("<directions>\n")
-for step in directions.find_all('p', class_="description"):
-    f.write("\t<step>"+step.string+"</step>\n")
+    directions = soup.find('div', class_="content-item tab-content current method-tab-content")
+    #for step in directions.find_all('p', class_="description"):
+    #    print step.string
 
-f.write("</directions>\n")
+    #get retrieve image and get extension
+    imageTag = soup.find('div', class_="recipe-image-wrapper")
+    image = imageTag.img['src']
+    outpath = re.search(".*/.*\.([a-z]+)$", image)
+    imgExtension = outpath.group(1)
+    imgName = recipename + "." +imgExtension
+    urlretrieve(image, imgName)
 
-f.write("<img>"+imgName+"</img>\n")
-f.write("</recipe>")
+    outfile = recipename + ".xml"
+    f = codecs.open(outfile, "w", 'utf_8')
+    f.write("<recipe>\n")
+    f.write("<head>\n")
+    f.write("\t<title>"+title.string+"</title>\n")
+    f.write("\t<yield>"+servings.em.string+"</yield>\n</head>\n")
+    f.write("<ingredients>\n")
+    for ing in ingredients.find_all("li"):
+        f.write("\t<ing>\n\t\t<item>")
+        f.write(ing.label.string.strip()+"\t\t</item>\n\t</ing>\n")
 
-f.close()
+    f.write("</ingredients>\n")
+    f.write("<nutrition>\n")
+    line = ""
+    for stat in nutrition.stripped_strings:
+        if re.search("[0-9]", stat):
+            line = re.sub("><", ">"+stat+"<", line)
+            f.write(line)
+        else:
+            line = "\t<"+stat+"></"+stat+">\n"
+    f.write("</nutrition>\n")
+
+    f.write("<directions>\n")
+    for step in directions.find_all('p', class_="description"):
+        f.write("\t<step>"+step.string+"</step>\n")
+
+    f.write("</directions>\n")
+
+    f.write("<img>"+imgName+"</img>\n")
+    f.write("</recipe>")
+
+    f.close()
